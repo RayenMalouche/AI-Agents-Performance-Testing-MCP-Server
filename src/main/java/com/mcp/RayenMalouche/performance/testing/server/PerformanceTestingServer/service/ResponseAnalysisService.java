@@ -4,6 +4,7 @@ import com.mcp.RayenMalouche.performance.testing.server.PerformanceTestingServer
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -140,4 +141,110 @@ public class ResponseAnalysisService {
                 evaluation.append("MCP Tool Usage: Good (").append(testResult.mcpCallsCount).append(" calls)\n");
             } else if (testResult.mcpCallsCount >= 1) {
                 evaluation.append("MCP Tool Usage: Basic (").append(testResult.mcpCallsCount).append(" calls)\n");
-                recommendations.append("- Increase MCP tool usage for better data extraction
+                recommendations.append("- Increase MCP tool usage for better data extraction\n");
+            } else {
+                evaluation.append("MCP Tool Usage: Poor (").append(testResult.mcpCallsCount).append(" calls)\n");
+                recommendations.append("- Insufficient MCP tool usage. Ensure proper tool utilization for data fetching\n");
+            }
+        }
+
+        // Cost evaluation
+        if (testResult.cost != null) {
+            if (testResult.cost <= 0.05) {
+                evaluation.append("Cost Efficiency: Excellent ($").append(String.format("%.4f", testResult.cost)).append(")\n");
+            } else if (testResult.cost <= 0.10) {
+                evaluation.append("Cost Efficiency: Good ($").append(String.format("%.4f", testResult.cost)).append(")\n");
+            } else if (testResult.cost <= 0.20) {
+                evaluation.append("Cost Efficiency: Acceptable ($").append(String.format("%.4f", testResult.cost)).append(")\n");
+                recommendations.append("- Monitor costs - consider optimizing token usage\n");
+            } else {
+                evaluation.append("Cost Efficiency: High ($").append(String.format("%.4f", testResult.cost)).append(")\n");
+                recommendations.append("- High cost detected - review and optimize query complexity\n");
+            }
+        }
+
+        // URLs fetched evaluation
+        if (testResult.urlsFetched != null && !testResult.urlsFetched.isEmpty()) {
+            evaluation.append("Data Sources: Good (").append(testResult.urlsFetched.size()).append(" URLs fetched)\n");
+        } else {
+            evaluation.append("Data Sources: Poor (no URLs detected)\n");
+            recommendations.append("- Ensure proper web data fetching using MCP tools\n");
+        }
+
+        testResult.performanceEvaluation = evaluation.toString();
+        testResult.recommendations = recommendations.toString();
+    }
+
+    public static String compareWithStandards(TestResult testResult, Map<String, Object> standards) {
+        StringBuilder comparison = new StringBuilder();
+        comparison.append("PERFORMANCE COMPARISON WITH INDUSTRY STANDARDS:\n");
+        comparison.append("=".repeat(50)).append("\n");
+
+        // Compare response time with standards
+        @SuppressWarnings("unchecked")
+        Map<String, Long> responseTimeStds = (Map<String, Long>) standards.get("responseTime");
+        if (responseTimeStds != null) {
+            comparison.append("Response Time Analysis:\n");
+            comparison.append("- Your result: ").append(testResult.responseTime).append("ms\n");
+            comparison.append("- Industry excellent: <").append(responseTimeStds.get("excellent")).append("ms\n");
+            comparison.append("- Industry good: <").append(responseTimeStds.get("good")).append("ms\n");
+            comparison.append("- Industry acceptable: <").append(responseTimeStds.get("acceptable")).append("ms\n");
+
+            if (testResult.responseTime <= responseTimeStds.get("excellent")) {
+                comparison.append("- Assessment: Exceeds industry standards ✓\n");
+            } else if (testResult.responseTime <= responseTimeStds.get("good")) {
+                comparison.append("- Assessment: Meets good industry standards ✓\n");
+            } else if (testResult.responseTime <= responseTimeStds.get("acceptable")) {
+                comparison.append("- Assessment: Within acceptable range ⚠\n");
+            } else {
+                comparison.append("- Assessment: Below industry standards ✗\n");
+            }
+            comparison.append("\n");
+        }
+
+        // Compare dataset quality
+        @SuppressWarnings("unchecked")
+        Map<String, Integer> qualityStds = (Map<String, Integer>) standards.get("datasetQuality");
+        if (qualityStds != null && testResult.datasetSize != null) {
+            comparison.append("Dataset Quality Analysis:\n");
+            comparison.append("- Your result: ").append(testResult.datasetSize).append(" elements\n");
+            comparison.append("- Industry minimum: ").append(qualityStds.get("minElements")).append(" elements\n");
+            comparison.append("- Industry recommended: ").append(qualityStds.get("recommendedElements")).append(" elements\n");
+            comparison.append("- Industry excellent: ").append(qualityStds.get("excellentElements")).append(" elements\n");
+
+            if (testResult.datasetSize >= qualityStds.get("excellentElements")) {
+                comparison.append("- Assessment: Exceeds industry standards ✓\n");
+            } else if (testResult.datasetSize >= qualityStds.get("recommendedElements")) {
+                comparison.append("- Assessment: Meets recommended standards ✓\n");
+            } else if (testResult.datasetSize >= qualityStds.get("minElements")) {
+                comparison.append("- Assessment: Meets minimum requirements ⚠\n");
+            } else {
+                comparison.append("- Assessment: Below minimum standards ✗\n");
+            }
+            comparison.append("\n");
+        }
+
+        // Compare cost efficiency
+        @SuppressWarnings("unchecked")
+        Map<String, Double> costStds = (Map<String, Double>) standards.get("costEfficiency");
+        if (costStds != null && testResult.cost != null) {
+            comparison.append("Cost Efficiency Analysis:\n");
+            comparison.append("- Your result: $").append(String.format("%.4f", testResult.cost)).append("\n");
+            comparison.append("- Industry excellent: <$").append(String.format("%.4f", costStds.get("excellent"))).append("\n");
+            comparison.append("- Industry good: <$").append(String.format("%.4f", costStds.get("good"))).append("\n");
+            comparison.append("- Industry acceptable: <$").append(String.format("%.4f", costStds.get("acceptable"))).append("\n");
+
+            if (testResult.cost <= costStds.get("excellent")) {
+                comparison.append("- Assessment: Excellent cost efficiency ✓\n");
+            } else if (testResult.cost <= costStds.get("good")) {
+                comparison.append("- Assessment: Good cost efficiency ✓\n");
+            } else if (testResult.cost <= costStds.get("acceptable")) {
+                comparison.append("- Assessment: Acceptable cost efficiency ⚠\n");
+            } else {
+                comparison.append("- Assessment: High cost - needs optimization ✗\n");
+            }
+        }
+
+        return comparison.toString();
+    }
+}
